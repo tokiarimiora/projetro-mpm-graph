@@ -33,70 +33,26 @@
 
     <script id="code">
       // variables
-      const defaultLocation = '401.515625 -278';
+      let defaultLocation = {x : 401.515625, y : -278};
+
       let tabTache = [];
       let tabLink = [];
       let tabNode = [];
+      let noeudModif=[];
+      let tacheModif=[];
+      let backup = null;
       tabNode = [...Object.values(saveToJson().nodeDataArray)];
 
-      //fonction pour réinitialiser à chaque changement
-      function reinitialise() {
-        let john = saveToJson();
-        tabNode = [];
-        tabLink = [];
-        for (const node of Object.values(john.nodeDataArray)) {
-          tabNode.push(node);
-        }
-        for (const link of Object.values(john.linkDataArray)) {
-          tabLink.push(link);
-        }
-        tabLink.forEach((link) => {
-          link.critique = false;
-        });
-        tabNode.forEach((node) => {
-          node.tot = undefined;
-          node.tard = undefined;
-          node.marge = undefined;
-        });
-        john.nodeDataArray = tabNode;
-        john.linkDataArray = tabLink;
-        loadFromJson(john);
-      }
-
-      function ajouterNoeud() {
-        const nom = document.getElementById('nomTache').value;
-        const duree = document.getElementById('dureeTache').value;
-        document.getElementById('nomTache').value = '';
-        document.getElementById('dureeTache').value = '';
-
-        if (isNaN(duree) || nom === '' || duree === '') {
-          console.log('errur');
-        } else {
-          if (!isExist(tabTache, nom)) {
-            tabTache.push({
-              nom: nom,
-              duree: duree,
-            });
-            myDiagram.model.addNodeData({
-              nom: nom,
-              loc: defaultLocation,
-              tot: undefined,
-              tard: undefined,
-              marge: undefined,
-            });
-            reinitialise();
-          } else alert('nom tâche déjà existe');
-        }
-        // verifyData();
-      }
-
-      function isExist(tab, nomTache) {
-        for (let i = 0; i < tab.length; i++) {
-          if (tab[i].nom == nomTache) {
-            return true;
-          }
-          return false;
-        }
+      function generateLocation(){
+       let x = 0 ;
+       let y = 0;
+       while (!(x > 217 && x < 650)) {
+         x = Math.random() * 1000;
+       }
+       while (!(y > -218 && y < -115)) {
+         y = Math.random() * (-1000);
+       }
+       return {x : x, y : y};
       }
 
       function saveToJson() {
@@ -108,11 +64,180 @@
         myDiagram.model = go.Model.fromJson(jsonToDraw);
       }
 
+      //fonction pour réinitialiser à chaque changement
+      function reinitialise() {
+        let john = saveToJson();
+        tabNode = [];
+        tabLink = [];
+        //reset tabnode
+        for (const node of Object.values(john.nodeDataArray)) {
+          tabNode.push(node);
+        }
+        //reset tablink
+        for (const link of Object.values(john.linkDataArray)) {
+          tabLink.push(link);
+        }
+        //reset link color
+        tabLink.forEach((link) => {
+          link.critique = false;
+        });
+        //reset properties
+        tabNode.forEach((node) => {
+          node.tot = undefined;
+          node.tard = undefined;
+          node.marge = undefined;
+          node.color = "black";
+        });
+        john.nodeDataArray = tabNode;
+        john.linkDataArray = tabLink;
+        loadFromJson(john);
+      }
+
+      function verif() {
+        document.getElementById("nomTache").value = "";
+        document.getElementById("dureeTache").value = "";
+        let jSon = saveToJson();
+        tabNode = [];
+        tabLink = [];
+        for (const node of Object.values(jSon.nodeDataArray)) {
+          tabNode.push(node);
+        }
+        let tmpTabTache=[];
+        for (const node of tabNode) {
+          let y = tabTache.filter((tache) => tache.nom == node.nom);   
+          if (y.length!==0) {
+            tmpTabTache.push(y[0]);
+          }
+        }
+        //  tabNode.forEach(node => {
+        //   let y = tabTache.filter((tache) => tache.nom == node.nom);   
+        //   if (y.length!==0) {
+        //     tmpTabTache.push(y[0]);
+        //   }
+        //  });
+         tabTache = tmpTabTache;
+         reinitialise();
+      }
+
+      function ajouterNoeud() {
+        const nom = document.getElementById("nomTache").value;
+        const duree = document.getElementById("dureeTache").value;
+        document.getElementById("nomTache").value = "";
+        document.getElementById("dureeTache").value = "";
+
+        if (isNaN(duree) || nom === "" || duree === "") {
+          console.log("errur");
+        } else {
+          if (!isExist(tabTache, nom)) {
+            tabTache.push({
+              nom: nom,
+              duree: duree,
+            });
+            myDiagram.model.addNodeData({
+              nom: nom,
+              // loc: generateLocation().x + ' ' + generateLocation().y,
+              loc: (defaultLocation.x + 15) + ' ' + defaultLocation.y,
+              tot: undefined,
+              tard: undefined,
+              marge: undefined,
+            });
+            defaultLocation.x += 15;
+          } else alert("nom tâche déjà existe");
+        }
+      }
+
+      function Modifier(nodeM) {
+        backup = saveToJson();
+        if (nodeM.id !== -1 && nodeM.id !== -2) {
+          noeudModif=nodeM;
+          const tmp33 = tabTache.filter(tac => tac.nom === nodeM.nom);
+          const dureeTmp33 = tmp33[0].duree;
+          tabTache = tabTache.filter(tac => tac.nom !== nodeM.nom);
+          tacheModif = {
+            nom: nodeM.nom,
+            duree: dureeTmp33
+          }
+          document.getElementById("modifierBtn").click();
+          document.getElementById("nomTacheM").value = nodeM.nom;
+          document.getElementById("dureeTacheM").value = parseInt(dureeTmp33);
+          }
+      }
+
+       function ajouterNoeudM() {
+        const nom = document.getElementById("nomTacheM").value;
+        const duree = document.getElementById("dureeTacheM").value;
+        document.getElementById("nomTacheM").value = "";
+        document.getElementById("dureeTacheM").value = "";
+           
+          if (!isExist(tabTache, nom)) {
+            tabTache.push({
+              nom: nom,
+              duree: duree,
+            });
+            
+            let jSon = saveToJson();
+            tabNode = [];   
+            tabLink=[];     
+            for (const link of Object.values(jSon.linkDataArray)) {
+          tabLink.push(link);
+        }
+            for (const node of Object.values(jSon.nodeDataArray)) {
+              tabNode.push(node);
+            }
+            
+            let m = tabNode.filter(node=>node.id==noeudModif.id);
+            m[0].nom= nom;
+            let lien= genererDuree(tabNode,tabLink,tabTache);
+            jSon.linkDataArray = lien;
+            jSon.nodeDataArray = tabNode;
+            loadFromJson(jSon);
+            reinitialise();
+                        
+          } else alert("nom tâche déjà existe");
+                  
+
+        // verifyData();
+      }
+
+      function cancelM(){
+        tabTache.push(tacheModif);
+        let jSon = saveToJson();
+        tabNode = [];   
+        tabLink=[];     
+        for (const link of Object.values(jSon.linkDataArray)) {
+          tabLink.push(link);
+        }
+        for (const node of Object.values(jSon.nodeDataArray)) {
+          tabNode.push(node);
+        }
+            
+        let m = tabNode.filter(node=>node.id==noeudModif.id);
+        m[0].nom= tacheModif.nom;
+        let lien= genererDuree(tabNode,tabLink,tabTache);
+        jSon.linkDataArray = lien;
+        jSon.nodeDataArray = tabNode;
+        loadFromJson(jSon);
+        reinitialise();
+        if (backup) {
+          loadFromJson(backup);
+        }
+      }
+
+      function isExist(tab, nomTache) {
+        let temoin = false;
+        for (let i = 0; i < tab.length; i++) {
+          if (tab[i].nom === nomTache) {
+            temoin = true;
+          }
+        }
+        return temoin;
+      }
+
       function genererDuree(tNode, tLink, tTache) {
         tLink.forEach((link) => {
           const from = link.from;
-          if (link.from == '-1') {
-            link.duree = '0';
+          if (link.from == "-1") {
+            link.duree = "0";
           } else {
             const tmpNode = tNode.filter((node) => node.id == link.from);
             const nodeName = tmpNode[0].nom;
@@ -149,24 +274,24 @@
         //end update
         if (isDiagramValid(tabLink, tabNode)) {
           //vider la table
-          var bodyT = document.getElementById('bodyTable');
+          var bodyT = document.getElementById("bodyTable");
           while (bodyT.hasChildNodes()) {
             bodyT.removeChild(bodyT.firstChild);
           }
 
-          let table = document.getElementsByTagName('table')[0];
+          let table = document.getElementsByTagName("table")[0];
           // creating all cells
           for (var i = 0; i < tabNode.length - 2; i++) {
             // creates a table row
-            let row = document.createElement('tr');
+            let row = document.createElement("tr");
 
             //donnés atao anaty tableau
             let tabtest = [];
             tabtest.push(tabTache[i].nom);
             tabtest.push(tabTache[i].duree);
 
-            let ante = ' ';
-            let succ = ' ';
+            let ante = [];
+            let succ = " ";
             const tmpNode = tabNode.filter(
               (node) => node.nom == tabTache[i].nom
             );
@@ -175,32 +300,32 @@
             const tmpLinkAnt = tabLink.filter((link) => link.to == nodeId);
             for (let k = 0; k < tmpLinkAnt.length; k++) {
               let element = tmpLinkAnt[k].from;
-              let nomAnt = '';
+              let nomAnt = "";
               const tmpNode1 = tabNode.filter((node) => node.id == element);
               nomAnt = tmpNode1[0].nom;
               if (!nomAnt) {
-                nomAnt = 'debut';
+                nomAnt = "debut";
               }
-              ante += nomAnt + ' - ';
+              ante.push(nomAnt);
             }
             tabtest.push(ante);
 
             const tmpLinkSucc = tabLink.filter((link) => link.from == nodeId);
             for (let l = 0; l < tmpLinkSucc.length; l++) {
               let element1 = tmpLinkSucc[l].to;
-              let nomSucc = '';
+              let nomSucc = "";
               const tmpNode2 = tabNode.filter((node) => node.id == element1);
               nomSucc = tmpNode2[0].nom;
               if (!nomSucc) {
-                nomSucc = 'fin';
+                nomSucc = "fin";
               }
-              succ += nomSucc + ' - ';
+              succ += nomSucc + " - ";
             }
             tabtest.push(succ);
             //fin donnée
 
             for (var j = 0; j < 4; j++) {
-              let cell = document.createElement('td');
+              let cell = document.createElement("td");
               let cellText = document.createTextNode(tabtest[j]);
               cell.appendChild(cellText);
               row.appendChild(cell);
@@ -210,7 +335,7 @@
             bodyT.appendChild(row);
           }
         } else {
-          console.log('tsa nety, efa reo ambony reo ny erreur');
+          console.log("tsa nety, efa reo ambony reo ny erreur");
         }
       }
 
@@ -240,7 +365,7 @@
           json.nodeDataArray = valiny;
           loadFromJson(json);
         } else {
-          console.log('tsa nety, efa reo ambony reo ny erreur');
+          console.log("tsa nety, efa reo ambony reo ny erreur");
         }
       }
 
@@ -269,7 +394,7 @@
             loadFromJson(json);
           }
         } else {
-          console.log('tsa nety, efa reo ambony reo ny erreur');
+          console.log("tsa nety, efa reo ambony reo ny erreur");
         }
       }
 
@@ -321,6 +446,8 @@
           const nodeFrom = tNode.filter((node) => node.id === li.from)[0];
           if (lastNode.tot - parseInt(li.duree) === parseInt(nodeFrom.tot)) {
             li.critique = true;
+            lastNode.color = "maroon";
+            lastNode.strokew = 1;
             ajouterChemin(tNode, tLink, nodeFrom);
           }
         });
@@ -328,15 +455,15 @@
       }
 
       function generateModal(message) {
-        var h = document.getElementById('modalErrorMessage');
+        var h = document.getElementById("modalErrorMessage");
         while (h.hasChildNodes()) {
           h.removeChild(h.firstChild);
         }
-        var t = document.createElement('p');
+        var t = document.createElement("p");
         var m = document.createTextNode(message);
         t.appendChild(m);
         h.appendChild(t);
-        $('#modalError').modal({ show: true });
+        $("#modalError").modal({ show: true });
       }
 
       function isDiagramValid(tLink, tNode) {
@@ -346,28 +473,24 @@
             const tmp = tLink.filter((link) => link.from == -1);
             if (tmp.length == 0) {
               generateModal("Le debut n'a pas de successeur");
-              console.log('Le debut n a pas de successeur');
               return false;
             }
           } else if (id == -2) {
             const tmp2 = tLink.filter((link) => link.to == -2);
             if (tmp2.length == 0) {
               generateModal("La fin n'a pas de predecesseur");
-              console.log('La fin n a pas de predecesseur');
               return false;
             }
           } else {
             const tmp3 = tLink.filter((link) => link.from == id);
             const tmp4 = tLink.filter((link) => link.to == id);
             if (tmp3.length == 0) {
-              generateModal('La tache ' + node.nom + " n'a pas de successeur");
-              console.log('La tache ' + node.nom + ' n a pas de successeur');
+              generateModal("La tache " + node.nom + " n'a pas de successeur");
               return false;
             } else if (tmp4.length == 0) {
               generateModal(
-                'La tache ' + node.nom + " n'a pas de predecesseur"
+                "La tache " + node.nom + " n'a pas de predecesseur"
               );
-              console.log('La tache ' + node.nom + ' n a pas de predecesseur');
               return false;
             }
           }
@@ -410,6 +533,7 @@
         return tNode;
       }
 
+     
       function init() {
         var $ = go.GraphObject.make; // for conciseness in defining templates
 
@@ -421,32 +545,44 @@
 
         myDiagram = $(
           go.Diagram,
-          'myDiagramDiv', // must name or refer to the DIV HTML element
+          "myDiagramDiv", // must name or refer to the DIV HTML element
           {
-            'animationManager.initialAnimationStyle': go.AnimationManager.None,
-            // InitialAnimationStarting: function (e) {
-            //   var animation = e.subject.defaultAnimation;
-            //   animation.easing = go.Animation.EaseOutExpo;
-            //   // animation.duration = 0;
-            //   animation.add(e.diagram, "scale", 0.1, 1);
-            //   animation.add(e.diagram, "opacity", 0, 1);
-            // },
-
+            "animationManager.initialAnimationStyle": go.AnimationManager.None,
+            
             // have mouse wheel events zoom in and out instead of scroll up and down
-            'toolManager.mouseWheelBehavior': go.ToolManager.WheelZoom,
-            // support double-click in background creating a new node
-            // 'clickCreatingTool.archetypeNodeData': {
+            "toolManager.mouseWheelBehavior": go.ToolManager.WheelZoom,
             // enable undo & redo
-            'undoManager.isEnabled': true,
+            "undoManager.isEnabled": false,
             positionComputation: function (diagram, pt) {
               return new go.Point(Math.floor(pt.x), Math.floor(pt.y));
             },
+            validCycle: go.Diagram.CycleNotDirected,
           }
         );
+    
+        /*
+        *delete
+        */
+        myDiagram.addDiagramListener("SelectionDeleted", function(event){
+          
+          setTimeout(()=>{
+            verif();  
+            reinitialise(); 
+          }, 500)
+        })
+
+        /*
+        *edit
+        */
+        myDiagram.addDiagramListener("ObjectDoubleClicked", function(event){
+          const a = myDiagram.selection.first();
+          Modifier(a.data);
+          
+        })
         /**
          * event listener link drawn
          */
-        myDiagram.addDiagramListener('LinkDrawn', function (e) {
+        myDiagram.addDiagramListener("LinkDrawn", function (e) {
           let json = saveToJson();
           tabLink = [];
           tabNode = [];
@@ -463,66 +599,68 @@
           reinitialise();
         });
 
-        // when the document is modified, add a "*" to the title and enable the "Save" button
+
+
+
+        // // when the document is modified, add a "*" to the title and enable the "Save" button
         // myDiagram.addDiagramListener("Modified", function (e) {
-        //   var button = document.getElementById("SaveButton");
-        //   if (button) button.disabled = !myDiagram.isModified;
-        //   var idx = document.title.indexOf("*");
-        //   if (myDiagram.isModified) {
-        //     if (idx < 0) document.title += "*";
-        //   } else {
-        //     if (idx >= 0) document.title = document.title.substr(0, idx);
-        //   }
+          
         // });
 
         // define the Node template
         myDiagram.nodeTemplate = $(
           go.Node,
-          'Auto',
+          "Auto",
           { desiredSize: new go.Size(85, 85) },
           {
             locationSpot: go.Spot.Top,
             isShadowed: true,
             shadowBlur: 1,
             shadowOffset: new go.Point(0, 1),
-            shadowColor: 'rgba(0, 0, 0, .14)',
+            shadowColor: "rgba(0, 0, 0, .14)",
           },
-          new go.Binding('location', 'loc', go.Point.parse).makeTwoWay(
+          new go.Binding("location", "loc", go.Point.parse).makeTwoWay(
             go.Point.stringify
           ),
           // define the node's outer shape, which will surround the TextBlock
           $(
             go.Panel,
-            'Vertical',
-            $(go.TextBlock, new go.Binding('text', 'marge'), {
-              font: 'bold 12pt helvetica, bold arial, sans-serif',
-              stroke: 'black',
-              textAlign: 'center',
+            "Vertical",
+            $(go.TextBlock, new go.Binding("text", "marge"), {
+              font: "bold 12pt helvetica, bold arial, sans-serif",
+              stroke: "black",
+              textAlign: "center",
             })
           ),
           $(
             go.Panel,
-            'Auto',
+            "Auto",
             { desiredSize: new go.Size(60, 60) },
-            $(go.Shape, 'Circle', CircleParams, {
-              name: 'SHAPE',
-              fill: '#ffffff',
-              strokeWidth: 0,
-              // stroke: null,
-              portId: '', // this Shape is the Node's port, not the whole Node
-              fromLinkable: true,
-              fromLinkableSelfNode: false,
-              fromLinkableDuplicates: false,
-              toLinkable: true,
-              toLinkableSelfNode: false,
-              toLinkableDuplicates: false,
-              cursor: 'pointer',
-              strokeWidth: 1,
-              stroke: 'black',
-            }),
+            $(
+              go.Shape,
+              "Circle",
+              CircleParams,
+              new go.Binding("stroke", "color"),
+              new go.Binding("strokeWidt", "strokew"),
+              {
+                name: "SHAPE",
+                fill: "#ffffff",
+                //strokeWidth: 0,
+                // stroke: null,
+                portId: "", // this Shape is the Node's port, not the whole Node
+                fromLinkable: true,
+                fromLinkableSelfNode: false,
+                fromLinkableDuplicates: false,
+                toLinkable: true,
+                toLinkableSelfNode: false,
+                toLinkableDuplicates: false,
+                cursor: "pointer",
+                strokeWidth: 1,
+              }
+            ),
             $(
               go.Panel,
-              'Table',
+              "Table",
               { stretch: go.GraphObject.Fill, margin: 0.5 },
 
               $(go.RowColumnDefinition, {
@@ -531,14 +669,14 @@
               }),
               $(go.RowColumnDefinition, {
                 column: 1,
-                separatorStroke: 'black',
+                separatorStroke: "black",
               }),
-              $(go.RowColumnDefinition, { row: 0, separatorStroke: 'black' }),
+              $(go.RowColumnDefinition, { row: 0, separatorStroke: "black" }),
               $(go.RowColumnDefinition, {
                 row: 1,
-                background: 'white',
+                background: "white",
                 coversSeparators: true,
-                separatorStroke: 'black',
+                separatorStroke: "black",
               }),
 
               $(
@@ -548,9 +686,10 @@
                   column: 0,
                   stretch: go.GraphObject.Horizontal,
                   margin: 2,
-                  textAlign: 'center',
+                  textAlign: "center",
+                  stroke: "maroon",
                 },
-                new go.Binding('text', 'tot')
+                new go.Binding("text", "tot")
               ),
               $(
                 go.TextBlock,
@@ -559,9 +698,10 @@
                   column: 1,
                   stretch: go.GraphObject.Horizontal,
                   margin: 2,
-                  textAlign: 'center',
+                  textAlign: "center",
+                  stroke: "blue",
                 },
-                new go.Binding('text', 'tard')
+                new go.Binding("text", "tard")
               ),
               $(
                 go.TextBlock,
@@ -571,9 +711,10 @@
                   columnSpan: 2,
                   stretch: go.GraphObject.Horizontal,
                   margin: 2,
-                  textAlign: 'center',
+                  textAlign: "center",
+                  font: "bold 12pt helvetica, bold arial, sans-serif",
                 },
-                new go.Binding('text', 'nom')
+                new go.Binding("text", "nom")
               )
             )
           )
@@ -582,13 +723,13 @@
         // unlike the normal selection Adornment, this one includes a Button
         myDiagram.nodeTemplate.selectionAdornmentTemplate = $(
           go.Adornment,
-          'Spot',
+          "Spot",
           $(
             go.Panel,
-            'Auto',
-            $(go.Shape, 'Circle', CircleParams, {
+            "Auto",
+            $(go.Shape, "Circle", CircleParams, {
               fill: null,
-              stroke: '#7986cb',
+              stroke: "#7986cb",
               strokeWidth: 1,
             }),
             $(go.Placeholder) // a Placeholder sizes itself to the selected Node
@@ -596,82 +737,93 @@
         ); // end Adornment
 
         myDiagram.nodeTemplateMap.add(
-          'Start',
+          "Start",
           $(
             go.Node,
-            'Spot',
-            { desiredSize: new go.Size(65, 65) },
-            new go.Binding('location', 'loc', go.Point.parse).makeTwoWay(
+            "Spot",
+            { desiredSize: new go.Size(125, 125), deletable: false },
+            new go.Binding("location", "loc", go.Point.parse).makeTwoWay(
               go.Point.stringify
             ),
-            $(go.Shape, 'Circle', {
-              fill: '#52ce60' /* green */,
+            $(
+              go.Panel,
+              "Vertical",
+              $(go.TextBlock, new go.Binding("text", "tot"), {
+                font: "bold 16pt helvetica, bold arial, sans-serif",
+                stroke: "black",
+              })
+            ),
+             $(
+              go.Panel,
+              "Auto",
+              { desiredSize: new go.Size(90, 90) },
+              
+              $(go.Shape, "Circle", {
+              fill: "#52ce60" /* green */,
               stroke: null,
-              portId: '',
+              portId: "",
               fromLinkable: true,
               fromLinkableSelfNode: true,
               fromLinkableDuplicates: true,
               toLinkable: false,
               toLinkableSelfNode: false,
               toLinkableDuplicates: false,
-              cursor: 'pointer',
+              cursor: "pointer",
             }),
-            $(go.TextBlock, new go.Binding('text', 'tot'), {
-              font: 'bold 16pt helvetica, bold arial, sans-serif',
-              stroke: '#52ce60',
+            $(go.TextBlock, new go.Binding("text", "tard"), {
+              font: "bold 16pt helvetica, bold arial, sans-serif",
+              stroke: "#52ce60",
             }),
-            $(go.TextBlock, new go.Binding('text', 'tard'), {
-              font: 'bold 16pt helvetica, bold arial, sans-serif',
-              stroke: '#52ce60',
-            }),
-            $(go.TextBlock, 'Début', {
-              font: 'bold 16pt helvetica, bold arial, sans-serif',
-              stroke: 'whitesmoke',
-            })
+            $(go.TextBlock, "Début", {
+              font: "bold 16pt helvetica, bold arial, sans-serif",
+              stroke: "whitesmoke",
+            }))
+
+            
           )
         );
 
         myDiagram.nodeTemplateMap.add(
-          'End',
+          "End",
           $(
             go.Node,
-            'Spot',
-            { desiredSize: new go.Size(95, 95) },
-            new go.Binding('location', 'loc', go.Point.parse).makeTwoWay(
+            "Spot",
+            { desiredSize: new go.Size(125, 125), deletable: false },
+            new go.Binding("location", "loc", go.Point.parse).makeTwoWay(
               go.Point.stringify
             ),
             $(
               go.Panel,
-              'Vertical',
-              $(go.TextBlock, new go.Binding('text', 'tot'), {
-                font: 'bold 16pt helvetica, bold arial, sans-serif',
-                stroke: 'black',
+              "Vertical",
+              $(go.TextBlock, new go.Binding("text", "tot"), {
+                font: "bold 16pt helvetica, bold arial, sans-serif",
+                stroke: "black",
               })
             ),
 
             $(
               go.Panel,
-              'Auto',
-              { desiredSize: new go.Size(60, 60) },
-              $(go.Shape, 'Circle', {
-                fill: 'maroon',
+              "Auto",
+              { desiredSize: new go.Size(90, 90) },
+              $(go.Shape, "Circle", {
+                fill: "maroon",
                 stroke: null,
-                portId: '',
+                portId: "",
                 fromLinkable: false,
                 fromLinkableSelfNode: false,
                 fromLinkableDuplicates: false,
                 toLinkable: true,
                 toLinkableSelfNode: true,
                 toLinkableDuplicates: true,
-                cursor: 'pointer',
+                cursor: "pointer",
               }),
-              $(go.TextBlock, new go.Binding('text', 'tard'), {
-                font: 'bold 16pt helvetica, bold arial, sans-serif',
-                stroke: 'maroon',
+              $(go.TextBlock, new go.Binding("text", "tard"), {
+                font: "bold 16pt helvetica, bold arial, sans-serif",
+                stroke: "maroon",
               }),
-              $(go.TextBlock, 'Fin', {
-                font: 'bold 16pt helvetica, bold arial, sans-serif',
-                stroke: 'whitesmoke',
+              $(go.TextBlock, "Fin", {
+                font: "bold 16pt helvetica, bold arial, sans-serif",
+                stroke: "whitesmoke",
               })
             )
           )
@@ -688,35 +840,35 @@
             relinkableTo: true,
             toShortLength: 3,
           },
-          new go.Binding('points').makeTwoWay(),
-          new go.Binding('curviness'),
+          new go.Binding("points").makeTwoWay(),
+          new go.Binding("curviness"),
           $(
             go.Shape, // the link shape
             { strokeWidth: 1.5 },
-            new go.Binding('stroke', 'critique', function (critique) {
-              return critique === true ? 'red' /* red */ : 'black';
+            new go.Binding("stroke", "critique", function (critique) {
+              return critique === true ? "red" /* red */ : "black";
             }),
-            new go.Binding('strokeWidth', 'critique', function (critique) {
+            new go.Binding("strokeWidth", "critique", function (critique) {
               return critique ? 2.5 : 1.5;
             })
           ),
           $(
             go.Shape, // the arrowhead
-            { toArrow: 'standard', stroke: null },
-            new go.Binding('fill', 'critique', function (critique) {
-              return critique === true ? 'red' /* green */ : 'black';
+            { toArrow: "standard", stroke: null },
+            new go.Binding("fill", "critique", function (critique) {
+              return critique === true ? "red" /* green */ : "black";
             })
           ),
           $(
             go.Panel,
-            'Auto',
+            "Auto",
             $(
               go.Shape, // the label background, which becomes transparent around the edges
               {
-                fill: $(go.Brush, 'Radial', {
-                  0: 'rgb(245, 245, 245)',
-                  0.7: 'rgb(245, 245, 245)',
-                  1: 'rgba(245, 245, 245, 0)',
+                fill: $(go.Brush, "Radial", {
+                  0: "rgb(245, 245, 245)",
+                  0.7: "rgb(245, 245, 245)",
+                  1: "rgba(245, 245, 245, 0)",
                 }),
                 stroke: null,
               }
@@ -725,79 +877,93 @@
               go.TextBlock,
               // the label text
               {
-                textAlign: 'center',
-                font: 'bold 9pt helvetica, arial, sans-serif',
+                textAlign: "center",
+                font: "bold 9pt helvetica, arial, sans-serif",
                 margin: 4,
                 editable: false, // enable in-place editing
               },
               // editing the text automatically updates the model data
-              new go.Binding('text', 'duree')
+              new go.Binding("text", "duree")
             )
           )
         );
 
-        // read in the JSON data from the "mySavedModel" element
-        load();
+              
+     // read in the JSON data from the "mySavedModel" element
+     load();
+      
+        
       }
 
       // Show the diagram's model in JSON format
       function save() {
         document.getElementById(
-          'mySavedModel'
+          "mySavedModel"
         ).value = myDiagram.model.toJson();
         json = myDiagram.model.toJson();
         myDiagram.isModified = false;
       }
+
       function load() {
         myDiagram.model = go.Model.fromJson(
-          document.getElementById('mySavedModel').value
+          document.getElementById("mySavedModel").value
         );
-      }
-
-      function fermerAlert(clas) {
-        document.querySelector(clas.toString()).classList.add('hidden');
+        tabTache=[];
+        tabLink=[];
+        tabNode=[];
+      
       }
 
       function verifyInput() {
-        if (document.getElementById('nomTache').value.trim() === '') {
-          document.querySelector('.btnAddNode').disabled = true;
-          document.querySelector('.errorAddNode').classList.remove('hidden');
+        if (document.getElementById("nomTache").value.trim() === "") {
+          document.querySelector(".btnAddNode").disabled = true;
+          document.querySelector(".errorAddNode").classList.remove("hidden");
         } else {
-          document.querySelector('.btnAddNode').disabled = false;
-          document.querySelector('.errorAddNode').classList.add('hidden');
+          document.querySelector(".btnAddNode").disabled = false;
+          document.querySelector(".errorAddNode").classList.add("hidden");
         }
         if (
-          isExist(tabTache, document.getElementById('nomTache').value.trim())
+          isExist(tabTache, document.getElementById("nomTache").value.trim())
         ) {
-          document.querySelector('.btnAddNode').disabled = true;
-          document.querySelector('.errorAddNode2').classList.remove('hidden');
+          document.querySelector(".btnAddNode").disabled = true;
+          document.querySelector(".errorAddNode2").classList.remove("hidden");
         } else {
-          document.querySelector('.errorAddNode2').classList.add('hidden');
+          document.querySelector(".errorAddNode2").classList.add("hidden");
         }
-        if (document.getElementById('dureeTache').value < 1) {
-          document.querySelector('.btnAddNode').disabled = true;
-          document.querySelector('.errorAddNode3').classList.remove('hidden');
+        if (document.getElementById("dureeTache").value < 0) {
+          document.querySelector(".btnAddNode").disabled = true;
+          document.querySelector(".errorAddNode3").classList.remove("hidden");
         } else {
-          document.querySelector('.errorAddNode3').classList.add('hidden');
+          document.querySelector(".errorAddNode3").classList.add("hidden");
+        }
+
+      
+      }
+
+        function verifyInputM() {
+        if (document.getElementById("nomTacheM").value.trim() === "") {
+          document.querySelector(".btnEditNode").disabled = true;
+          document.querySelector(".errorEditNode").classList.remove("hidden");
+        } else {
+          document.querySelector(".btnEditNode").disabled = false;
+          document.querySelector(".errorEditNode").classList.add("hidden");
+        }
+        if (
+          isExist(tabTache, document.getElementById("nomTacheM").value.trim())
+        ) {
+          document.querySelector(".btnEditNode").disabled = true;
+          document.querySelector(".errorEditNode2").classList.remove("hidden");
+        } else {
+          document.querySelector(".errorEditNode2").classList.add("hidden");
+        }
+        if (document.getElementById("dureeTacheM").value < 0) {
+          document.querySelector(".btnEditNode").disabled = true;
+          document.querySelector(".errorEditNode3").classList.remove("hidden");
+        } else {
+          document.querySelector(".errorEditNode3").classList.add("hidden");
         }
       }
 
-      function sauver() {
-        window.localStorage.setItem(
-          'graphe',
-          JSON.stringify(myDiagram.model.toJson())
-        );
-      }
-      function charger() {
-        try {
-          document.getElementById('mySavedModel').value = JSON.parse(
-            window.localStorage.getItem('graphe')
-          );
-          loadFromJson(JSON.parse(window.localStorage.getItem('graphe')));
-        } catch (e) {
-          console.log(e);
-        }
-      }
     </script>
   </head>
 
@@ -807,116 +973,224 @@
         <h1>Ordonnancement de tâche - MPM</h1>
       </nav>
       <div class="row">
-        <div class="col-4">
-          <div
-            class="nav flex-column nav-pills"
-            role="tablist"
-            aria-orientation="vertical"
+        <div class="col-1"></div>
+        <div class="col-3">
+          <button
+            type="button"
+            class="btn btn-success plusTot"
+            onclick="trouverPlusTot()"
           >
-            <button
-              type="button"
-              class="btn btn-danger ajouterTache"
-              data-toggle="modal"
-              data-target="#modalAjouterNoeud"
-            >
-              NOUVELLE TACHE
-            </button>
-            <button
-              type="button"
-              class="btn btn-danger plusTot"
-              onclick="trouverPlusTot()"
-            >
-              DATE AU PLUS TOT
-            </button>
-            <button
-              type="button"
-              class="btn btn-danger cheminCritique"
-              onclick="trouverChemin()"
-            >
-              CHEMIN CRITIQUE
-            </button>
-            <button
-              type="button"
-              class="btn btn-danger plusTard"
-              onclick="trouverPlusTard()"
-            >
-              DATE AU PLUS TARD
-            </button>
-            <button
-              type="button"
-              class="btn btn-danger marge"
-              onclick="trouverMarge()"
-            >
-              MARGE
-            </button>
-            <button
-              class="btn btn-danger genererTableau"
-              onclick="generateTable()"
-            >
-              GENERER TABLEAU
-            </button>
-          </div>
-
-          <div class="row">
-            <h5>TABLEAU</h5>
-            <table class="table table-dark" id="test">
-              <thead>
-                <tr>
-                  <th scope="col">tâche</th>
-                  <th scope="col">durée</th>
-                  <th scope="col">ant.</th>
-                  <th scope="col">sucs.</th>
-                </tr>
-              </thead>
-              <tbody id="bodyTable">
-                <tr>
-                  <td scope="col"></td>
-                  <td scope="col"></td>
-                  <td scope="col"></td>
-                  <td scope="col"></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+            DATE AU PLUS TOT
+          </button>
         </div>
-        <div class="col-8">
-          <nav class="navbar navbar-light bg-light">
-            <h3 col-3>DESSINEZ UN GRAPHE</h3>
-          </nav>
-          <div id="sample">
-            <div
-              id="myDiagramDiv"
-              style="
-                border: solid 1px black;
-                width: 100%;
-                height: 500px;
-                background: whitesmoke;
-              "
-            ></div>
-            <div>
-              <div>
-                <button id="SaveButton" onclick="save()">Save</button>
-                <button onclick="load()">Load</button>
-                Diagram Model saved in JSON format:
-                <button onclick="sauver()">Sauvegarder</button>
-                <button onclick="charger()">Charger</button>
-              </div>
-              <textarea id="mySavedModel" style="width: 100%; height: 300px">
+        <div class="col-3">
+          <button
+            type="button"
+            class="btn btn-danger cheminCritique"
+            onclick="trouverChemin()"
+          >
+            CHEMIN CRITIQUE
+          </button>
+        </div>
+        <div class="col-3">
+          <button
+            type="button"
+            class="btn btn-warning plusTard"
+            onclick="trouverPlusTard()"
+          >
+            DATE AU PLUS TARD
+          </button>
+        </div>
+        <div class="col-2">
+          <button
+            type="button"
+            class="btn btn-info marge"
+            onclick="trouverMarge()"
+          >
+            MARGE
+          </button>
+        </div>
+      </div>
+      <p></p>
+      <div class="row">
+        <div class="col-1">
+          <button
+            type="button"
+            class="btn btn-light"
+            data-toggle="modal"
+            data-target="#modalAjouterNoeud"
+            onclick="verif()"
+          >
+            <img src="img/icons8_plus.ico" alt="" />
+          </button>
+          <button
+            style="display: none;"
+            type="button"
+            class="btn btn-light"
+            id="modifierBtn"
+            data-toggle="modal"
+            data-target="#modalModifier"
+            
+          >
+            modifier
+          </button>
+          
+          <p></p>
+          <button
+            type="button"
+            class="btn btn-light"
+            onclick="load()"
+           >
+            <img src="img/icons8_redoo.ico" alt="" />
+          </button>
+          <p></p>
+          <button
+            class="btn btn-light genererTableau"
+            onclick="generateTable()"
+          >
+            <a href="#ancre"
+              ><img src="img/icons8_data_sheet_filled.ico" alt=""
+            /></a>
+          </button>
+        </div>
+        <div class="col-11" style="position: relative;" >
+          <div
+            id="myDiagramDiv"
+            style="
+              border: solid 1px black;
+              width: 100%;
+              height: 600px;
+              background: whitesmoke;
+            "                      
+          ></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-3">
+          <div hidden>
+            <button id="SaveButton" onclick="save()">Save</button>
+            <button onclick="load()">Load</button>
+            Diagram Model saved in JSON format:
+            <button onclick="sauver()">Sauvegarder</button>
+            <button onclick="charger()">Charger</button>
+          </div>
+          <textarea id="mySavedModel" style="width: 100%; height: 300px" hidden>
                 { "class": "GraphLinksModel",
   "nodeKeyProperty": "id",
   "nodeDataArray": [ 
 {"id":-1, "loc":"115.75065031249997 1.1537875000000497", "category":"Start", "tot": "0", "tard": "0"},
-{"id":-2, "loc":"632.8508013984375 8.83045211328124", "category":"End", "tot":"0", "tard": "0"}
+{"id":-2, "loc":"632.8508013984375 8.83045211328124", "category":"End", "tot":"", "tard": "0"}
  ],
   "linkDataArray": []}            
   </textarea
-              >
-            </div>
+          >
+        </div>
+        <div class="col-6">
+          <div>
+            <h5 class="font-italic font-weight-bolder text-center" id="ancre">
+              TABLEAU RECAPITLATIF
+            </h5>
+          </div>
+
+          <table class="table table-dark text-center id="test">
+            <thead>
+              <tr>
+                <th scope="col " class="text-center">tâches</th>
+                <th scope="col" class="text-center">durées</th>
+                <th scope="col" class="text-center">tâches antérieurs</th>
+                <th scope="col" class="text-center">tâches successeur</th>
+              </tr>
+            </thead>
+            <tbody id="bodyTable">
+              <tr>
+                <td scope="col" ></td>
+                <td scope="col" ></td>
+                <td scope="col" ></td>
+                <td scope="col" ></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="col-3"></div>
+      </div>      
+    </div>
+
+    <!-- modifier -->
+    
+    <div id="modalModifier" class="modal fade">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4>A propos de la tâche</h4>
+          </div>
+          <div class="modal-body">
+            <form role="form" method="POST" id="form-tachee" action="">
+              <div class="form-group">
+                <label class="control-label">Nom de la tâche</label>
+                <div>
+                  <input
+                  
+                    onkeyup="verifyInputM()"
+                    id="nomTacheM"
+                    type="text"
+                    class="form-control input-lg"
+                    name="nomm"
+                    value=""
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="control-label">Durée de la tâche</label>
+                <div>
+                  <input
+                  
+                    onkeyup="verifyInputM()"
+                    onmouseup="verifyInputM()"
+                    id="dureeTacheM"
+                    type="number"
+                    class="form-control input-lg"
+                    name="dureee"
+                    value=""
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <div class="row">
+                  <div class="col-md-6">
+                   <p class="errorEditNode hidden" style="color: crimson">
+                      Information(s) invalide(s)
+                    </p>
+                    <p class="errorEditNode2 hidden" style="color: crimson">
+                      Le nom de la tâche existe déjà!
+                    </p>
+                    <p class="errorEditNode3 hidden" style="color: crimson">
+                      Durée invalide!
+                    </p>
+                  </div>
+                  <div class="col-md-3">
+                    <button
+                                            onclick="ajouterNoeudM()"
+
+                      class="btn btn-success btnEditNode"
+                      data-dismiss="modal"
+                      disabled
+                    
+                    >
+                      Modifier
+                    </button>
+                  </div>
+                  <div class="col-md-3">
+                    <button data-dismiss="modal" class="btn btn-secondary" onclick="cancelM()">
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       </div>
     </div>
-
     <!-- modals  -->
     <div id="modalAjouterNoeud" class="modal fade">
       <div class="modal-dialog" role="document">
@@ -973,7 +1247,7 @@
                       data-dismiss="modal"
                       disabled
                     >
-                      Ajouter
+                      Valider
                     </button>
                   </div>
                   <div class="col-md-3">
