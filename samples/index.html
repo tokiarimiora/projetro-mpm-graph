@@ -42,25 +42,12 @@
       let tacheModif=[];
       let backup = null;
       tabNode = [...Object.values(saveToJson().nodeDataArray)];
-
-      function generateLocation(){
-       let x = 0 ;
-       let y = 0;
-       while (!(x > 217 && x < 650)) {
-         x = Math.random() * 1000;
-       }
-       while (!(y > -218 && y < -115)) {
-         y = Math.random() * (-1000);
-       }
-       return {x : x, y : y};
-      }
-
+     
       function saveToJson() {
         return JSON.parse(myDiagram.model.toJson());
       }
 
       function loadFromJson(jsonToDraw) {
-        // verifyData();
         myDiagram.model = go.Model.fromJson(jsonToDraw);
       }
 
@@ -109,12 +96,6 @@
             tmpTabTache.push(y[0]);
           }
         }
-        //  tabNode.forEach(node => {
-        //   let y = tabTache.filter((tache) => tache.nom == node.nom);   
-        //   if (y.length!==0) {
-        //     tmpTabTache.push(y[0]);
-        //   }
-        //  });
          tabTache = tmpTabTache;
          reinitialise();
       }
@@ -135,7 +116,6 @@
             });
             myDiagram.model.addNodeData({
               nom: nom,
-              // loc: generateLocation().x + ' ' + generateLocation().y,
               loc: (defaultLocation.x + 15) + ' ' + defaultLocation.y,
               tot: undefined,
               tard: undefined,
@@ -146,6 +126,7 @@
         }
       }
 
+      //double click sur le noeud  
       function Modifier(nodeM) {
         backup = saveToJson();
         if (nodeM.id !== -1 && nodeM.id !== -2) {
@@ -163,6 +144,7 @@
           }
       }
 
+      //ajout donnée modifier
        function ajouterNoeudM() {
         const nom = document.getElementById("nomTacheM").value;
         const duree = document.getElementById("dureeTacheM").value;
@@ -194,11 +176,9 @@
             reinitialise();
                         
           } else alert("nom tâche déjà existe");
-                  
-
-        // verifyData();
-      }
-
+       }
+      
+       //annuler la modification
       function cancelM(){
         tabTache.push(tacheModif);
         let jSon = saveToJson();
@@ -233,6 +213,7 @@
         return temoin;
       }
 
+      //ajouter la durré sur chaque lien
       function genererDuree(tNode, tLink, tTache) {
         tLink.forEach((link) => {
           const from = link.from;
@@ -251,6 +232,7 @@
         return tLink;
       }
 
+      //generer le tableau recapitulatif
       function generateTable() {
         let john = saveToJson();
         tabLink = [];
@@ -273,6 +255,54 @@
         tabTache = tabTemp;
         //end update
         if (isDiagramValid(tabLink, tabNode)) {
+          //  DONNée
+          let tableau=[];
+          for (let i = 0; i < tabNode.length - 2; i++) {
+            let tabtest={};
+
+            let ante = [];
+            let succ = [];
+            const tmpNode = tabNode.filter(
+              (node) => node.nom == tabTache[i].nom
+            );
+            const nodeId = tmpNode[0].id;
+
+            const tmpLinkAnt = tabLink.filter((link) => link.to == nodeId);
+            for (let k = 0; k < tmpLinkAnt.length; k++) {
+              let element = tmpLinkAnt[k].from;
+              let nomAnt = {};
+              const tmpNode1 = tabNode.filter((node) => node.id == element);
+              nomAnt = {noma: tmpNode1[0].nom};
+              if (nomAnt.noma===undefined) {
+                nomAnt = {noma:"debut"};
+              }
+              ante.push(nomAnt);
+              ante.sort((a,b)=> a.noma.localeCompare(b.noma));
+            }
+
+            const tmpLinkSucc = tabLink.filter((link) => link.from == nodeId);
+            for (let l = 0; l < tmpLinkSucc.length; l++) {
+              let element1 = tmpLinkSucc[l].to;
+              let nomSucc = {};
+              const tmpNode2 = tabNode.filter((node) => node.id == element1);
+              nomSucc = {noms: tmpNode2[0].nom};
+              if (nomSucc.noms===undefined) {
+                nomSucc = {noms: "fin"};
+              } 
+              succ.push(nomSucc);
+              succ.sort((a,b)=> a.noms.localeCompare(b.noms));
+            }
+
+            tabtest = {
+              nomTache: tabTache[i].nom,
+              duree: tabTache[i].duree,
+              anterieur: ante,
+              successeur: succ,
+            }
+            tableau.push(tabtest);           
+          }
+          tableau.sort((a,b)=> a.nomTache.localeCompare(b.nomTache));
+
           //vider la table
           var bodyT = document.getElementById("bodyTable");
           while (bodyT.hasChildNodes()) {
@@ -284,49 +314,30 @@
           for (var i = 0; i < tabNode.length - 2; i++) {
             // creates a table row
             let row = document.createElement("tr");
+            
+            //element par ligne
+            let elem= tableau[i];
+            let anter = elem.anterieur;
+            let TAnt="";
+            anter.forEach(anter => {
+              TAnt += anter.noma + " - ";
+            });
 
-            //donnés atao anaty tableau
-            let tabtest = [];
-            tabtest.push(tabTache[i].nom);
-            tabtest.push(tabTache[i].duree);
+            let succes= elem.successeur;
+            let TSuc="";
+            succes.forEach(succes => {
+              TSuc += succes.noms + " - ";
+            });
 
-            let ante = [];
-            let succ = " ";
-            const tmpNode = tabNode.filter(
-              (node) => node.nom == tabTache[i].nom
-            );
-            const nodeId = tmpNode[0].id;
-
-            const tmpLinkAnt = tabLink.filter((link) => link.to == nodeId);
-            for (let k = 0; k < tmpLinkAnt.length; k++) {
-              let element = tmpLinkAnt[k].from;
-              let nomAnt = "";
-              const tmpNode1 = tabNode.filter((node) => node.id == element);
-              nomAnt = tmpNode1[0].nom;
-              if (!nomAnt) {
-                nomAnt = "debut";
-              }
-              ante.push(nomAnt);
-            }
-            tabtest.push(ante);
-
-            const tmpLinkSucc = tabLink.filter((link) => link.from == nodeId);
-            for (let l = 0; l < tmpLinkSucc.length; l++) {
-              let element1 = tmpLinkSucc[l].to;
-              let nomSucc = "";
-              const tmpNode2 = tabNode.filter((node) => node.id == element1);
-              nomSucc = tmpNode2[0].nom;
-              if (!nomSucc) {
-                nomSucc = "fin";
-              }
-              succ += nomSucc + " - ";
-            }
-            tabtest.push(succ);
-            //fin donnée
-
+            let ligne = [];
+            ligne.push(elem.nomTache);
+            ligne.push(elem.duree);
+            ligne.push(TAnt);
+            ligne.push(TSuc);
+           
             for (var j = 0; j < 4; j++) {
               let cell = document.createElement("td");
-              let cellText = document.createTextNode(tabtest[j]);
+              let cellText = document.createTextNode(ligne[j]);
               cell.appendChild(cellText);
               row.appendChild(cell);
             }
@@ -335,7 +346,7 @@
             bodyT.appendChild(row);
           }
         } else {
-          console.log("tsa nety, efa reo ambony reo ny erreur");
+          console.log("erreur");
         }
       }
 
@@ -394,7 +405,7 @@
             loadFromJson(json);
           }
         } else {
-          console.log("tsa nety, efa reo ambony reo ny erreur");
+          console.log("erreur");
         }
       }
 
@@ -408,6 +419,7 @@
         tnode.forEach((node) => {
           if (!isNaN(node.tot) && !isNaN(node.tard)) {
             node.marge = node.tard - node.tot;
+
           } else if (isNaN(node.tot)) {
             generateModal("Veuillez d'abord cliquer sur date au plus tôt");
           } else if (isNaN(node.tard)) {
@@ -539,8 +551,7 @@
 
         // some constants that will be reused within templates
         var CircleParams = {
-          parameter1: 2, // set the rounded corner
-          // spot1: go.Spot.TopLeft, spot2: go.Spot.BottomRight  // make content go all the way to inside edges of rounded corners
+          parameter1: 2, 
         };
 
         myDiagram = $(
@@ -579,6 +590,7 @@
           Modifier(a.data);
           
         })
+
         /**
          * event listener link drawn
          */
@@ -599,19 +611,11 @@
           reinitialise();
         });
 
-
-
-
-        // // when the document is modified, add a "*" to the title and enable the "Save" button
-        // myDiagram.addDiagramListener("Modified", function (e) {
-          
-        // });
-
         // define the Node template
         myDiagram.nodeTemplate = $(
           go.Node,
           "Auto",
-          { desiredSize: new go.Size(85, 85) },
+          { desiredSize: new go.Size(110, 110) },
           {
             locationSpot: go.Spot.Top,
             isShadowed: true,
@@ -635,7 +639,7 @@
           $(
             go.Panel,
             "Auto",
-            { desiredSize: new go.Size(60, 60) },
+            { desiredSize: new go.Size(85, 85) },
             $(
               go.Shape,
               "Circle",
@@ -645,8 +649,6 @@
               {
                 name: "SHAPE",
                 fill: "#ffffff",
-                //strokeWidth: 0,
-                // stroke: null,
                 portId: "", // this Shape is the Node's port, not the whole Node
                 fromLinkable: true,
                 fromLinkableSelfNode: false,
@@ -856,7 +858,7 @@
             go.Shape, // the arrowhead
             { toArrow: "standard", stroke: null },
             new go.Binding("fill", "critique", function (critique) {
-              return critique === true ? "red" /* green */ : "black";
+              return critique === true ? "red" : "black";
             })
           ),
           $(
@@ -891,8 +893,7 @@
               
      // read in the JSON data from the "mySavedModel" element
      load();
-      
-        
+              
       }
 
       // Show the diagram's model in JSON format
@@ -936,8 +937,6 @@
         } else {
           document.querySelector(".errorAddNode3").classList.add("hidden");
         }
-
-      
       }
 
         function verifyInputM() {
@@ -1115,8 +1114,9 @@
       </div>      
     </div>
 
-    <!-- modifier -->
+    <!-- modals -->
     
+    <!-- modifier -->
     <div id="modalModifier" class="modal fade">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -1191,7 +1191,8 @@
         </div>
       </div>
     </div>
-    <!-- modals  -->
+
+    <!-- ajout -->
     <div id="modalAjouterNoeud" class="modal fade">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -1263,6 +1264,7 @@
       </div>
     </div>
 
+    <!-- erreur -->
     <div id="modalError" class="modal fade">
       <div class="modal-dialog" role="document">
         <div class="modal-content">
